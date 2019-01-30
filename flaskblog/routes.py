@@ -1,19 +1,24 @@
 from flask import render_template, url_for, flash, redirect, request
-from flaskblog.models import User, Post
-from flaskblog.forms import RegistrationForm, LoginForm
-from flaskblog import app,db
+from flaskblog.models import User, Inv_Content
+from flaskblog.forms import RegistrationForm, LoginForm, InventoryForm
+from flaskblog import app,db,mysql
 from flask_login import login_user, current_user, logout_user, login_required
 
-posts=[{'author':'Umair Akhtar','title':'Blog Post 1','date_posted':'12/01/2018','content':'This is Ajay hello'},{'author':'Mark T','title':'Blog post 2','date_posted':'12/01/2018','content':'This is Archana hello'}]
+
+#posts=[{'author':'Umair Akhtar','title':'Blog Post 1','date_posted':'12/01/2018','content':'This is Ajay hello'},{'author':'Mark T','title':'Blog post 2','date_posted':'12/01/2018','content':'This is Archana hello'}]
 
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template('home.html',posts=posts)
+    return render_template('home.html')
 
 @app.route("/about")
 def about():
-    return render_template('about.html',title='About')
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT  * FROM inv__content")
+    data = cur.fetchall()
+    cur.close()
+    return render_template('about.html',title='About', inv__content=data)
 
 @app.route("/register",methods=['GET','POST'])
 def register():
@@ -53,3 +58,41 @@ def logout():
 @login_required
 def account():
     return render_template('account.html',title='Account')
+
+@app.route("/add",methods=['GET','POST'])
+def add():
+    form = InventoryForm()
+    if form.validate_on_submit():
+
+        #Add from here 
+        inv_content = Inv_Content(machine_name=form.machine_name.data, model=form.model.data, location=form.location.data)
+        db.session.add(inv_content)
+        db.session.commit()
+        flash('Data has been added!','success')
+        return redirect(url_for('about'))
+    return render_template('add.html',title='Add',form=form)
+
+@app.route('/delete/<string:id_data>', methods = ['GET'])
+def delete(id_data):
+    flash("Record Has Been Deleted Successfully")
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM inv__content WHERE id=%s", (id_data,))
+    mysql.connection.commit()
+    return redirect(url_for('about'))
+
+@app.route('/update',methods=['POST','GET'])
+def update():
+
+    if request.method == 'POST':
+        id_data = request.form['id']
+        machine_name = request.form['machine_name']
+        model = request.form['model']
+        cur = mysql.connection.cursor()
+        cur.execute("""
+               UPDATE inv__content
+               SET machine_name=%s, model=%s
+               WHERE id=%s
+            """, (name, model, id_data))
+        flash("Data Updated Successfully")
+        mysql.connection.commit()
+        return render_template('update.html',title='Update',form=form)

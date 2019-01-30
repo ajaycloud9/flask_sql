@@ -26,3 +26,9 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
     submit=SubmitField('Login')
+
+class InventoryForm(FlaskForm):
+    machine_name=StringField('Machine name',validators=[DataRequired(),Length(min=2,max=20)])
+    model=StringField('Model',validators=[DataRequired(),Length(min=2,max=20)])
+    location = StringField('Location', validators=[DataRequired(), Length(min=2, max=20)])
+    submit=SubmitField('Submit')
